@@ -58,21 +58,22 @@ python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> ### ⚠️ Known dependency caveat — read this before reporting a bug
+> ### Dependency notes
 >
-> `requirements.txt` installs KBUtilLib from its `main` branch. Several fixes this
-> pipeline depends on may not have landed on `main` yet — most importantly a
-> `NameError: name 'genome' is not defined` raised by
-> `kb_gapfill_metabolic_models` on **every** gap-fill call.
->
-> If you hit that error, KBUtilLib is too old. Ask Chris which branch or commit to pin,
-> and install it directly:
+> **KBUtilLib** is installed from its `main` branch, which now contains every fix this
+> pipeline depends on (verified against `main` as of 2026-07-20 — in particular the
+> gap-filling fix for `NameError: name 'genome' is not defined`, which previously
+> failed on *every* gap-fill call). If you cloned or installed before that date, force a
+> refresh:
 > ```bash
-> pip install "git+https://github.com/cshenry/KBUtilLib@<branch-or-commit>#egg=kbutillib"
+> pip install --force-reinstall --no-deps \
+>   "git+https://github.com/cshenry/KBUtilLib@main#egg=kbutillib"
 > ```
-> The same applies to `modelseedpy` — the pinned PyPI release may lag the version this
-> was developed against. If `MSBuilder` is missing on import, ask Chris for the
-> ModelSEEDpy branch.
+>
+> **modelseedpy** is pinned to the `0.4.2` PyPI release. This pipeline was developed
+> against a working copy that may be slightly ahead of it. If you hit an `ImportError`
+> for `MSBuilder` or a missing attribute on a `modelseedpy` object, that's the cause —
+> email Chris and he'll point you at the right branch.
 
 ### KBase token
 
