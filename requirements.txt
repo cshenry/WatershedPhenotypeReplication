@@ -1,0 +1,10 @@
+# WatershedPhenotypeReplication dependencies.
+#
+# KBUtilLib has no PyPI release; install it from source via a git VCS URL so
+# this repo is runnable outside Chris's local Dropbox layout (pip resolves
+# and builds it like any other dependency). Pin modelseedpy/cobra to the
+# versions ModelingLOE and GenomeAnnotationAggregator build against.
+git+https://github.com/cshenry/KBUtilLib@main#egg=kbutillib
+modelseedpy==0.4.2
+cobra==0.30.0
+matplotlib>=3.8

@@ -1,0 +1,10 @@
+# >>> kbu work-notebook gitignore >>>
+notebooks/PRJ-*/NBCache/
+notebooks/PRJ-*/NBOutput/
+.ipynb_checkpoints/
+# <<< kbu work-notebook gitignore <<<
+
+__pycache__/
+*.pyc
+.venv/
+venv/

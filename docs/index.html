@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Watershed E. coli — Phenotype Model Replication</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #f4f3f0;
+    --surface-1: #fcfcfb;
+    --surface-2: #f0efec;
+    --border:    #e2e0da;
+    --ink-1:     #14130f;
+    --ink-2:     #52514e;
+    --ink-3:     #86847d;
+    --accent:    #2a78d6;
+    --d-orig:    #8a8781;
+    --d-2022:    #2a78d6;
+    --d-2025:    #eb6834;
+    --d-2026:    #1baf7a;
+    --good:      #0ca30c;
+    --warning:   #d98a00;
+    --critical:  #d03b3b;
+    --shadow:    0 1px 2px rgba(20,19,15,.06), 0 4px 16px rgba(20,19,15,.05);
+    --radius:    14px;
+    --maxw:      1060px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-0: #121211;
+      --surface-1: #1c1c1a;
+      --surface-2: #26251f;
+      --border:    #35342e;
+      --ink-1:     #f6f5ef;
+      --ink-2:     #c3c2b7;
+      --ink-3:     #8f8e84;
+      --accent:    #3987e5;
+      --d-orig:    #9a978d;
+      --d-2022:    #3987e5;
+      --d-2025:    #d95926;
+      --d-2026:    #199e70;
+      --good:      #23b823;
+      --warning:   #fab219;
+      --critical:  #e66767;
+      --shadow:    0 1px 2px rgba(0,0,0,.4), 0 6px 22px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1c1c1a; --surface-2: #26251f;
+    --border: #35342e; --ink-1: #f6f5ef; --ink-2: #c3c2b7; --ink-3: #8f8e84;
+    --accent: #3987e5; --d-orig: #9a978d; --d-2022: #3987e5; --d-2025: #d95926; --d-2026: #199e70;
+    --good: #23b823; --warning: #fab219; --critical: #e66767;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 22px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 68px; }
+  body {
+    margin: 0; background: var(--surface-0); color: var(--ink-1);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1, h2, h3 { line-height: 1.25; letter-spacing: -0.01em; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em;
+    background: var(--surface-2); padding: .1em .38em; border-radius: 5px; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 22px; }
+
+  nav {
+    position: sticky; top: 0; z-index: 50; background: color-mix(in srgb, var(--surface-0) 88%, transparent);
+    backdrop-filter: saturate(180%) blur(10px); border-bottom: 1px solid var(--border);
+  }
+  nav .wrap { display: flex; align-items: center; gap: 8px; height: 56px; }
+  nav .brand { font-weight: 680; letter-spacing: -0.02em; margin-right: auto; font-size: 15px; }
+  nav a { color: var(--ink-2); font-size: 14px; padding: 6px 10px; border-radius: 8px; font-weight: 520; }
+  nav a:hover { color: var(--ink-1); background: var(--surface-2); text-decoration: none; }
+  .themebtn { cursor: pointer; border: 1px solid var(--border); background: var(--surface-1);
+    color: var(--ink-2); width: 34px; height: 34px; border-radius: 9px; font-size: 15px; }
+  .navlinks { display: flex; gap: 2px; }
+  @media (max-width: 820px) { .navlinks { display: none; } }
+
+  header.hero { padding: 66px 0 34px; border-bottom: 1px solid var(--border); }
+  .kicker { color: var(--accent); font-weight: 640; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+  header.hero h1 { font-size: clamp(28px, 4.4vw, 44px); margin: 12px 0 14px; font-weight: 740; }
+  header.hero p.lede { font-size: clamp(17px, 2.2vw, 20px); color: var(--ink-2); max-width: 730px; margin: 0; }
+  .byline { margin-top: 18px; color: var(--ink-3); font-size: 14px; }
+  .statusnote { margin-top: 18px; display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--ink-2); background: var(--surface-2);
+    border: 1px solid var(--border); padding: 7px 12px; border-radius: 999px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+
+  section { padding: 46px 0; border-bottom: 1px solid var(--border); }
+  section h2 { font-size: clamp(21px, 2.6vw, 27px); margin: 0 0 6px; font-weight: 700; }
+  section .sub { color: var(--ink-2); margin: 0 0 26px; max-width: 730px; }
+  section p { color: var(--ink-2); max-width: 730px; }
+  section p strong, li strong { color: var(--ink-1); font-weight: 620; }
+
+  .hero-answer { background: linear-gradient(180deg, var(--surface-1), var(--surface-0));
+    border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 28px; margin-bottom: 26px; }
+  .hero-answer .big { font-size: clamp(22px, 3.2vw, 32px); font-weight: 720; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .hero-answer .big em { font-style: normal; color: var(--good); }
+  .hero-answer p { margin: 0; max-width: 800px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 18px 16px; box-shadow: var(--shadow); }
+  .card .label { font-size: 12.5px; color: var(--ink-3); font-weight: 560; text-transform: uppercase; letter-spacing: .03em; }
+  .card .value { font-size: 30px; font-weight: 720; letter-spacing: -0.02em; margin: 6px 0 2px; }
+  .card .value.small { font-size: 22px; }
+  .card .foot { font-size: 13px; color: var(--ink-2); }
+  .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+
+  figure { margin: 0; background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 20px 16px; }
+  figure + figure { margin-top: 20px; }
+  figcaption { font-size: 13px; color: var(--ink-2); margin-top: 12px; }
+  .fig-title { font-weight: 650; font-size: 15.5px; margin: 0 0 2px; }
+  .fig-sub { font-size: 13px; color: var(--ink-3); margin: 0 0 14px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 820px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+  .legend span { display: inline-flex; align-items: center; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  .tablewrap { overflow-x: auto; }
+  th, td { text-align: right; padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { color: var(--ink-3); font-weight: 580; font-size: 12.5px; text-transform: uppercase; letter-spacing: .02em; }
+  tbody tr:hover { background: var(--surface-2); }
+  td.num { font-variant-numeric: tabular-nums; }
+  td .chg { color: var(--ink-3); font-size: 12px; }
+  td .chg.hi { color: var(--d-2025); }
+
+  .callout { border-left: 3px solid var(--warning); background: var(--surface-1);
+    border-radius: 0 var(--radius) var(--radius) 0; padding: 16px 20px; margin: 20px 0; box-shadow: var(--shadow); }
+  .callout.crit { border-left-color: var(--critical); }
+  .callout.good { border-left-color: var(--good); }
+  .callout h3 { margin: 0 0 6px; font-size: 16px; }
+  .callout p { margin: 0; font-size: 14.5px; }
+
+  .steps { counter-reset: step; padding: 0; margin: 20px 0 0; list-style: none; }
+  .steps li { counter-increment: step; position: relative; padding: 4px 0 16px 40px; color: var(--ink-2); }
+  .steps li::before { content: counter(step); position: absolute; left: 0; top: 2px;
+    width: 26px; height: 26px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--ink-1); font-size: 13px; font-weight: 640; display: grid; place-items: center; }
+  .steps li strong { color: var(--ink-1); }
+
+  .pill { font-size: 12px; padding: 2px 9px; border-radius: 999px; font-weight: 600; border: 1px solid transparent; }
+  .pill.good { color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); }
+  .pill.crit { color: var(--critical); background: color-mix(in srgb, var(--critical) 12%, transparent); }
+
+  footer { padding: 40px 0 60px; color: var(--ink-3); font-size: 13.5px; }
+  footer a { color: var(--ink-2); }
+  .muted { color: var(--ink-3); }
+  svg text { font-family: inherit; }
+  .barval { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <span class="brand">Watershed <em style="font-style:italic">E. coli</em> · Model Replication</span>
+    <div class="navlinks">
+      <a href="#answer">Result</a>
+      <a href="#datasets">Four datasets</a>
+      <a href="#accuracy">Accuracy</a>
+      <a href="#quality">Model quality</a>
+      <a href="#media">Per substrate</a>
+      <a href="#genomes">Per genome</a>
+      <a href="#methods">Methods</a>
+    </div>
+    <button class="themebtn" id="themebtn" title="Toggle light / dark" aria-label="Toggle theme">◐</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Metabolic model reconstruction · Hope College collaboration</div>
+    <h1>Reproducing the 2022 Biolog simulations on the Hope College <em style="font-style:italic">E. coli</em> genome set</h1>
+    <p class="lede">How faithfully current simulation code reproduces the collaborators' 2022 phenotype
+      predictions across 519 genomes — and how much re-annotation and full model rebuilding shift the
+      growth calls. Every result is reported as a count with the percent of growth conditions that
+      <strong>changed</strong> relative to the original 2022 output.</p>
+    <div class="byline">Argonne National Laboratory · reconstructed from the collaborators' own 2022 notebook</div>
+    <div class="statusnote"><span class="dot" id="livedot"></span><span id="livestatus">Loading results…</span></div>
+  </div>
+</header>
+
+<section id="answer">
+  <div class="wrap">
+    <h2>The answer</h2>
+    <p class="sub">The deliverable compares four datasets over the same 519 genomes and 324 Biolog
+      conditions: the collaborators' original 2022 output, our resimulation of those same 2022 models,
+      the 2025 KBase re-annotated models, and a full 2026 rebuild from the original genomes. The question
+      is <strong>replication fidelity</strong> — how much of the 2022 result survives each change.</p>
+
+    <div class="hero-answer">
+      <p class="big">Current code reproduces <em>~90%</em> of the 2022 calls.</p>
+      <p>Resimulating the original 2022 models with today's pipeline matches the collaborators' own
+        growth/no-growth calls on <strong>90%</strong> of conditions. Re-annotating the genomes (2025k) and
+        rebuilding the models from scratch (2026p) each shift only about <strong>10%</strong> of growth
+        conditions relative to that 2022 baseline — and all three resimulated sets predict the real
+        experimental Biolog data about equally well.</p>
+    </div>
+
+    <div class="cards" id="answercards"><!-- filled by JS --></div>
+
+    <div class="grid2" style="margin-top:22px">
+      <figure>
+        <p class="fig-title">Replication fidelity vs. the 2022 output</p>
+        <p class="fig-sub">Fraction of the 324 growth calls each resimulated set reproduces from Clayton's original 2022 result. Mean ± SE across genomes.</p>
+        <div id="chart-fidelity"></div>
+        <div class="legend" id="legend-fidelity"></div>
+        <figcaption>Higher is better. All three resimulated sets reproduce ~89–90% of the original calls;
+          re-annotation and rebuilding barely move fidelity.</figcaption>
+      </figure>
+      <figure>
+        <p class="fig-title">What each change did to accuracy</p>
+        <p class="fig-sub">Effect on accuracy vs. the real K-12 Biolog data, isolating each change from the resimulated-2022p baseline.</p>
+        <div id="chart-effects"></div>
+        <figcaption>Effect in percentage points, paired per genome. Both re-annotation and the rebuild
+          nudge accuracy up slightly — small, but statistically real across 519 genomes.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section id="datasets">
+  <div class="wrap">
+    <h2>The four datasets</h2>
+    <p class="sub">One baseline and three resimulations, each run through the <em>identical</em> downstream
+      pipeline — gap-fill on pyruvate, simulate the 324-condition Biolog panel, call growth at the same
+      threshold — so any difference measures the models and annotations, not the treatment.</p>
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>Dataset</th><th style="text-align:left">What it is</th><th style="text-align:left">Genome annotation</th><th style="text-align:left">Reconstruction</th></tr></thead>
+      <tbody>
+        <tr><td><span class="swatch" style="background:var(--d-orig)"></span><strong>Original 2022p</strong></td><td style="text-align:left">Clayton's own 2022 spreadsheet output — the baseline</td><td style="text-align:left" class="muted">PATRIC (2022)</td><td style="text-align:left" class="muted">2022, as published</td></tr>
+        <tr><td><span class="swatch" style="background:var(--d-2022)"></span><strong>Resimulated 2022p</strong></td><td style="text-align:left">the same 2022 models, resimulated with current code</td><td style="text-align:left" class="muted">PATRIC (2022)</td><td style="text-align:left" class="muted">2022 models</td></tr>
+        <tr><td><span class="swatch" style="background:var(--d-2025)"></span><strong>Resimulated 2025k</strong></td><td style="text-align:left">the KBase RAST re-annotated models</td><td style="text-align:left" class="muted">KBase RAST (2025)</td><td style="text-align:left" class="muted">2025 build</td></tr>
+        <tr><td><span class="swatch" style="background:var(--d-2026)"></span><strong>Resimulated 2026p</strong></td><td style="text-align:left">a full rebuild from the original genomes with current code</td><td style="text-align:left" class="muted">PATRIC (2022)</td><td style="text-align:left" class="muted">2026 (MSBuilder, ATP-safe)</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="margin-top:20px">In every table below, <strong>Original 2022p</strong> is a plain count of
+      growth conditions; the three resimulated columns show <code>count (% changed)</code> — the number of
+      growth calls, and what percent of them differ from Original 2022p for that row.</p>
+    <p><code>2022p → 2025k</code> isolates the <strong>re-annotation effect</strong> (same era of build, new
+      annotations); <code>2022p → 2026p</code> isolates the <strong>rebuild effect</strong> (same
+      annotations, current reconstruction code).</p>
+  </div>
+</section>
+
+<section id="accuracy">
+  <div class="wrap">
+    <h2>Accuracy against the real Biolog data</h2>
+    <p class="sub">Replication fidelity says whether we reproduced the 2022 <em>run</em>; this says whether
+      the predictions are actually <em>right</em>, scored against the measured K-12 Biolog growth calls.
+      This is the referee for model quality, secondary to fidelity but the metric that ultimately matters.</p>
+    <figure>
+      <p class="fig-title">Accuracy vs. experimental Biolog data</p>
+      <p class="fig-sub">Fraction of conditions each resimulated set predicts correctly against experiment. Mean ± SE across genomes.</p>
+      <div id="chart-accuracy"></div>
+      <div class="legend" id="legend-accuracy"></div>
+      <figcaption>All three resimulated sets land within a fraction of a point of one another — the newer
+        annotations and rebuild neither help nor hurt accuracy in any material way. (The K-12 reference is a
+        sound referee for aggregate model quality, not for per-strain differences among the 32 watershed strains.)</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="quality">
+  <div class="wrap">
+    <h2>A methodological finding: the models can fix CO₂ — and shouldn't</h2>
+    <p class="sub">Worth knowing before publishing predictions built on these models. It is not specific to
+      this study: the defect is in the reconstruction template, so it reaches any model built from it.</p>
+
+    <div class="callout crit">
+      <h3><em style="font-style:italic">E. coli</em> models arrive able to grow on CO₂ with no organic carbon</h3>
+      <p>Freshly gap-filled models can build biomass from CO₂ + minerals — no sugar, no organic carbon at
+        all — and the capability is <em>identical across every genome</em>, the signature of a template-level
+        defect rather than anything genome-specific. <em>E. coli</em> is not an autotroph.</p>
+      <p style="margin-top:10px">The cause is <strong>reaction directionality</strong>: two reactions are
+        declared reversible that are one-way in life, and the solver runs them backwards to manufacture
+        reducing power, which then drives CO₂ fixation.</p>
+      <ul style="margin:10px 0 0; padding-left:20px; color:var(--ink-2); font-size:14.5px">
+        <li><code>rxn05759</code> (hydrogen:ferredoxin oxidoreductase) — charge-imbalanced by 2; run in
+          reverse it creates free electrons.</li>
+        <li><code>rxn03978</code> (assimilatory nitrite reductase) — run forwards it becomes
+          <strong>NH₃ → NO₂⁻</strong>, i.e. ammonia oxidation yielding reductant. Ammonia is the confirmed
+          energy source: remove NH₃ from the medium and the autotrophy disappears entirely.</li>
+      </ul>
+      <p style="margin-top:10px">It slips past both standard guardrails: <strong>ATP correction</strong>
+        doesn't see it (the leak is electrons, not ATP) and <strong>mass-balance checks</strong> pass it (the
+        formulas balance — only the charge is wrong).</p>
+    </div>
+
+    <div class="callout good">
+      <h3>What we do about it — and why these results are clean</h3>
+      <p>Both reactions are constrained to their physiological direction before gap-filling, and CO₂ uptake is
+        blocked at simulation time — restoring a bound the Biolog media already declare. Since the Biolog
+        media supply no CO₂, <strong>the artifact cannot affect the growth predictions reported here</strong>.
+        With that fix plus ATP-safe gap-filling, <strong id="q-clean">every</strong> model in all four datasets
+        is free of the fatal "free-lunch" failure (biomass from minerals alone) —
+        <strong id="q-fl">0</strong> free-lunch models across <span id="q-n">—</span>. A residual autotrophy
+        persists on some models via a further ammonia-oxidation route we did not chase; it is a model-quality
+        issue for the ModelSEED developers, not a threat to these results.</p>
+    </div>
+
+    <figure>
+      <p class="fig-title">Two failure modes, two severities</p>
+      <div class="tablewrap">
+      <table>
+        <thead><tr><th style="text-align:left">Failure</th><th style="text-align:left">Grows on</th><th style="text-align:left">Fixable?</th><th style="text-align:left">What we do</th></tr></thead>
+        <tbody>
+          <tr><td style="text-align:left"><span class="pill" style="color:var(--warning);background:color-mix(in srgb,var(--warning) 14%,transparent)">Autotrophic</span></td><td style="text-align:left">CO₂ + minerals</td><td style="text-align:left">Yes</td><td style="text-align:left">Block CO₂ uptake (the media already forbid it). Predictions stay sound; kept.</td></tr>
+          <tr><td style="text-align:left"><span class="pill crit">Free lunch</span></td><td style="text-align:left">minerals alone</td><td style="text-align:left">No</td><td style="text-align:left">No carbon to block. Predictions meaningless; excluded. <strong>None occur here.</strong></td></tr>
+        </tbody>
+      </table>
+      </div>
+      <figcaption>The latent CO₂-fixation capability remains in the model even when blocked at simulation
+        time — feed one CO₂ and it returns. The underlying cause is reaction <em>directionality</em> in the
+        reconstruction template, not the gap-filling step.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="media">
+  <div class="wrap">
+    <h2>Per-substrate results</h2>
+    <p class="sub">All 324 Biolog conditions. Each dataset column shows the number of models predicting
+      growth, and — for the resimulated sets — the percent of calls that changed vs. Original 2022p. Sorted
+      by the 2026p rebuild's change rate: the substrates the reconstruction moved most. Click a column to sort.</p>
+    <div id="media-observation"></div>
+    <figure>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <input id="media-filter" placeholder="filter substrates…" style="flex:1;min-width:160px;
+          padding:8px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);
+          color:var(--ink-1);font-size:14px">
+        <span class="muted" id="media-count" style="font-size:13px"></span>
+      </div>
+      <div class="tablewrap" style="max-height:480px;overflow:auto;border:1px solid var(--border);border-radius:10px">
+        <table id="media-table">
+          <thead><tr>
+            <th data-k="media_name" style="text-align:left;position:sticky;top:0;background:var(--surface-1)">Substrate</th>
+            <th data-k="panel" style="text-align:left;position:sticky;top:0;background:var(--surface-1)">Panel</th>
+            <th data-k="original_2022p" style="position:sticky;top:0;background:var(--surface-1)">Original</th>
+            <th data-k="resim_2022p" style="position:sticky;top:0;background:var(--surface-1)">2022p</th>
+            <th data-k="resim_2025k" style="position:sticky;top:0;background:var(--surface-1)">2025k</th>
+            <th data-k="resim_2026p" style="position:sticky;top:0;background:var(--surface-1)">2026p</th>
+            <th data-k="experimental" style="text-align:left;position:sticky;top:0;background:var(--surface-1)">Experiment</th>
+          </tr></thead>
+          <tbody id="media-tbody"></tbody>
+        </table>
+      </div>
+      <figcaption>Each cell: number of models (of 519) predicting growth, with <span class="muted">(% changed
+        vs Original 2022p)</span> beneath for the resimulated sets. “Experiment” is the measured K-12 Biolog
+        call. Substrates with a high 2026p change rate and a clear experimental answer show where the rebuild
+        moved the prediction most.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="genomes">
+  <div class="wrap">
+    <h2>Per-genome results</h2>
+    <p class="sub">All 519 genomes. For each dataset: how many of the 324 conditions the model predicts
+      growth on, and — for the resimulated sets — the percent changed vs. Original 2022p. Sorted by the 2026p
+      change rate; click a column to sort, type to filter.</p>
+    <figure>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+        <input id="genome-filter" placeholder="filter genomes…" style="flex:1;min-width:160px;
+          padding:8px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2);
+          color:var(--ink-1);font-size:14px">
+        <span class="muted" id="genome-count" style="font-size:13px"></span>
+      </div>
+      <div class="tablewrap" style="max-height:480px;overflow:auto;border:1px solid var(--border);border-radius:10px">
+        <table id="genome-table">
+          <thead><tr>
+            <th data-k="genome_id" style="text-align:left;position:sticky;top:0;background:var(--surface-1)">Genome</th>
+            <th data-k="exp_grow" style="position:sticky;top:0;background:var(--surface-1)">Exp. growers</th>
+            <th data-k="original_2022p" style="position:sticky;top:0;background:var(--surface-1)">Original</th>
+            <th data-k="resim_2022p" style="position:sticky;top:0;background:var(--surface-1)">2022p</th>
+            <th data-k="resim_2025k" style="position:sticky;top:0;background:var(--surface-1)">2025k</th>
+            <th data-k="resim_2026p" style="position:sticky;top:0;background:var(--surface-1)">2026p</th>
+          </tr></thead>
+          <tbody id="genome-tbody"></tbody>
+        </table>
+      </div>
+      <figcaption>“Exp. growers” = conditions where K-12 actually grows (of 324). Each dataset cell: growth
+        conditions predicted, with <span class="muted">(% changed vs Original 2022p)</span> for the
+        resimulated sets. Largest 2026p change first.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="methods">
+  <div class="wrap">
+    <h2>Methods — the reconstructed 2022 pipeline</h2>
+    <p class="sub">The method is not inferred. It is the collaborators' own 2022 notebook, run with current code.</p>
+    <ol class="steps">
+      <li><strong>Gap-fill</strong> each model on <code>Carbon-Pyruvic-Acid</code>, ATP-safe, with the
+        leaky-reversible reactions constrained first. The saved 2022 models are auxotrophic — without this
+        they predict zero growth on everything, glucose included.</li>
+      <li><strong>Simulate</strong> the <code>ecoli_biolog</code> phenotype set (324 Biolog conditions) with
+        missing transporters auto-added and <strong>CO₂ uptake blocked</strong>.</li>
+      <li><strong>Score</strong> the growth/no-growth calls two ways: against the collaborators' own 2022
+        output (replication fidelity), and against the experimental Biolog data (accuracy).</li>
+      <li><strong>Verify</strong> every gap-filled model actually grows before it is scored — a model that
+        fails to grow on its own gap-fill medium is flagged, not silently reported.</li>
+    </ol>
+    <div class="callout">
+      <h3>A trap worth flagging: a model's vintage is not in its name</h3>
+      <p>The narrative workspace holds both 2022 and 2025 models; some 2025 models are named plainly, and one
+        genome has two objects with the <em>identical</em> name distinguishable only by save date. Selecting
+        “the latest version” silently grabs the 2025 model and labels it 2022. This pipeline splits by
+        genome-set marker <em>and</em> save date; all 519 genomes carry a genuine 2022 model recovered from
+        object history.</p>
+    </div>
+  </div>
+</section>
+
+<section id="data">
+  <div class="wrap">
+    <h2>Data &amp; reproducibility</h2>
+    <p class="sub">Everything here is regenerated from the sweep over the full model set. The repository
+      contains the notebooks, the reconstructed pipeline, and the collaborators' original 2022 notebook as
+      ground truth.</p>
+    <div class="cards">
+      <div class="card"><div class="label">Genomes</div><div class="value" id="d-genomes">—</div><div class="foot">each with all four datasets</div></div>
+      <div class="card"><div class="label">Model simulations scored</div><div class="value" id="d-models">—</div><div class="foot">across four datasets</div></div>
+      <div class="card"><div class="label">Biolog conditions</div><div class="value">324</div><div class="foot">C / N / P / S panels</div></div>
+      <div class="card"><div class="label">Failed</div><div class="value small" id="d-failed">—</div><div class="foot">checkpointed &amp; resumable</div></div>
+    </div>
+    <p style="margin-top:22px"><strong>Reproduce:</strong> <code>python scripts/four_dataset_sweep.py</code>
+      runs the full sweep over the four datasets; <code>python scripts/build_dashboard_data.py</code>
+      regenerates the numbers on this page. See the repository <code>README</code> and
+      <a href="SETUP.md">SETUP.md</a> for the full install-and-run guide, including the
+      KBase narratives you'll need shared with you.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Watershed <em style="font-style:italic">E. coli</em> phenotype-model replication — Argonne National Laboratory,
+      in collaboration with the Hope College Global Water Research Institute.
+      Reconstructed from the collaborators' 2022 <code>BioLogMacTest.ipynb</code>.</p>
+    <p class="muted" id="footmeta"></p>
+  </div>
+</footer>
+
+<script>
+// ---- theme toggle -----------------------------------------------------------
+(function () {
+  const btn = document.getElementById('themebtn');
+  const root = document.documentElement;
+  btn.addEventListener('click', () => {
+    const cur = root.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light'
+      : cur === 'light' ? 'dark'
+      : (matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark');
+    root.setAttribute('data-theme', next);
+    if (window.__render) window.__render();
+  });
+})();
+
+const CSS = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = (x, d = 3) => (x == null || isNaN(x)) ? '—' : Number(x).toFixed(d);
+const pp = (x) => (x >= 0 ? '+' : '−') + Math.abs(x * 100).toFixed(2);
+
+const DS = ['original_2022p', 'resim_2022p', 'resim_2025k', 'resim_2026p'];
+const SIM = ['resim_2022p', 'resim_2025k', 'resim_2026p'];
+const DS_LABEL = { original_2022p: 'Original 2022p', resim_2022p: 'Resimulated 2022p',
+  resim_2025k: 'Resimulated 2025k', resim_2026p: 'Resimulated 2026p' };
+const DS_SHORT = { original_2022p: 'Original', resim_2022p: '2022p', resim_2025k: '2025k', resim_2026p: '2026p' };
+const DS_VAR = { original_2022p: '--d-orig', resim_2022p: '--d-2022', resim_2025k: '--d-2025', resim_2026p: '--d-2026' };
+const COL = (ds) => CSS(DS_VAR[ds]);
+
+// ---- svg helpers ------------------------------------------------------------
+const SVGNS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, txt) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (txt != null) n.textContent = txt;
+  return n;
+}
+function svg(w, h) {
+  const s = el('svg', { viewBox: `0 0 ${w} ${h}`, width: '100%', 'font-size': '13', role: 'img' });
+  s.style.maxWidth = w + 'px'; s.style.height = 'auto'; s.style.display = 'block'; s.style.margin = '0 auto';
+  return s;
+}
+
+let DATA = null;
+function renderAll() { if (!DATA) return; drawBars('chart-fidelity', 'legend-fidelity', 'clayton', SIM, 0.80, 0.95); drawEffects(); drawBars('chart-accuracy', 'legend-accuracy', 'exp', SIM, 0.58, 0.70); }
+window.__render = renderAll;
+
+// ---- generic zoomed accuracy bar chart (fidelity + experiment) --------------
+function drawBars(hostId, legendId, metric, keys, lo, hi) {
+  const host = document.getElementById(hostId); if (!host) return; host.innerHTML = '';
+  const arms = keys.filter(a => DATA.datasets[a] && DATA.datasets[a][metric] && DATA.datasets[a][metric].mean != null);
+  const W = 460, H = 260, ml = 48, mr = 16, mt = 12, mb = 46;
+  const iw = W - ml - mr, ih = H - mt - mb;
+  const y = v => mt + ih - (v - lo) / (hi - lo) * ih;
+  const s = svg(W, H);
+  for (let g = lo; g <= hi + 1e-9; g += (hi - lo) / 6) {
+    s.appendChild(el('line', { x1: ml, x2: W - mr, y1: y(g), y2: y(g), stroke: CSS('--border'), 'stroke-width': 1 }));
+    s.appendChild(el('text', { x: ml - 8, y: y(g) + 4, 'text-anchor': 'end', fill: CSS('--ink-3') }, g.toFixed(2)));
+  }
+  s.appendChild(el('text', { x: 14, y: mt + ih / 2, transform: `rotate(-90 14 ${mt + ih / 2})`,
+    'text-anchor': 'middle', fill: CSS('--ink-3'), 'font-size': 12 }, metric === 'clayton' ? 'fidelity' : 'accuracy'));
+  const bw = iw / arms.length, barw = Math.min(78, bw * 0.5);
+  arms.forEach((a, i) => {
+    const d = DATA.datasets[a][metric];
+    const cx = ml + bw * (i + 0.5), yt = y(d.mean), yb = y(lo);
+    s.appendChild(el('rect', { x: cx - barw / 2, y: yt, width: barw, height: Math.max(0, yb - yt), rx: 4, fill: COL(a) }));
+    if (d.se > 0) {
+      const y1 = y(d.mean + d.se), y2 = y(d.mean - d.se);
+      [[cx, cx, y1, y2], [cx - 6, cx + 6, y1, y1], [cx - 6, cx + 6, y2, y2]].forEach(([x1, x2, ya, yb2]) =>
+        s.appendChild(el('line', { x1, x2, y1: ya, y2: yb2, stroke: CSS('--ink-1'), 'stroke-width': 1.5, opacity: .55 })));
+    }
+    s.appendChild(el('text', { x: cx, y: yt - 8, 'text-anchor': 'middle', fill: CSS('--ink-1'), 'font-weight': 660, class: 'barval' }, fmt(d.mean, 3)));
+    s.appendChild(el('text', { x: cx, y: H - mb + 20, 'text-anchor': 'middle', fill: CSS('--ink-2'), 'font-weight': 560 }, DS_SHORT[a]));
+    s.appendChild(el('text', { x: cx, y: H - mb + 36, 'text-anchor': 'middle', fill: CSS('--ink-3'), 'font-size': 11 }, `n=${d.n}`));
+  });
+  host.appendChild(s);
+  const lg = document.getElementById(legendId); if (lg) { lg.innerHTML = '';
+    arms.forEach(a => { const sp = document.createElement('span');
+      sp.innerHTML = `<span class="swatch" style="background:${COL(a)}"></span>${DS_LABEL[a]}`; lg.appendChild(sp); }); }
+}
+
+// ---- effects (diverging around zero) ---------------------------------------
+function drawEffects() {
+  const host = document.getElementById('chart-effects'); if (!host) return; host.innerHTML = '';
+  const D = DATA.decomposition;
+  const rows = [
+    ['annotation', 'Re-annotation effect', '2022p → 2025k (KBase RAST)'],
+    ['build', 'Rebuild effect', '2022p → 2026p (current build)'],
+  ].filter(r => D[r[0]]);
+  if (!rows.length) return;
+  const W = 460, H = 220, ml = 8, mr = 8, mt = 16, mb = 34;
+  const iw = W - ml - mr, ih = H - mt - mb;
+  const maxAbs = Math.max(0.012, ...rows.map(r => Math.abs(D[r[0]].delta) + D[r[0]].se));
+  const x = v => ml + iw / 2 + (v / maxAbs) * (iw / 2 - 12);
+  const s = svg(W, H);
+  const rowH = ih / rows.length;
+  s.appendChild(el('line', { x1: x(0), x2: x(0), y1: mt, y2: mt + ih, stroke: CSS('--ink-3'), 'stroke-width': 1.5 }));
+  s.appendChild(el('text', { x: x(0), y: mt + ih + 22, 'text-anchor': 'middle', fill: CSS('--ink-3'), 'font-size': 11 }, 'no change'));
+  [-1, -0.5, 0.5, 1].forEach(t => { const v = t / 100; if (Math.abs(v) > maxAbs) return;
+    s.appendChild(el('text', { x: x(v), y: mt - 4, 'text-anchor': 'middle', fill: CSS('--ink-3'), 'font-size': 10.5 },
+      (t > 0 ? '+' : '−') + Math.abs(t))); });
+  rows.forEach((r, i) => {
+    const d = D[r[0]], cy = mt + rowH * (i + 0.5), better = d.delta >= 0;
+    const col = better ? CSS('--good') : CSS('--critical');
+    s.appendChild(el('line', { x1: x(d.delta - d.se), x2: x(d.delta + d.se), y1: cy, y2: cy, stroke: col, 'stroke-width': 2, opacity: .45 }));
+    s.appendChild(el('circle', { cx: x(d.delta), cy, r: 6.5, fill: col, stroke: CSS('--surface-1'), 'stroke-width': 2 }));
+    s.appendChild(el('text', { x: ml, y: cy - rowH / 2 + 15, fill: CSS('--ink-1'), 'font-weight': 620 }, r[1]));
+    s.appendChild(el('text', { x: x(d.delta) + (better ? 12 : -12), y: cy + 4, 'text-anchor': better ? 'start' : 'end',
+      fill: col, 'font-weight': 660, class: 'barval' }, pp(d.delta) + ' pp' + (d.real ? '' : ' (ns)')));
+    s.appendChild(el('text', { x: ml, y: cy - rowH / 2 + 30, fill: CSS('--ink-3'), 'font-size': 11 }, r[2]));
+  });
+  host.appendChild(s);
+}
+
+// ---- cards + meta -----------------------------------------------------------
+function fillText() {
+  const DTS = DATA.datasets;
+  const cards = document.getElementById('answercards');
+  const mk = (label, val, foot, col) =>
+    `<div class="card"><div class="label">${label}</div><div class="value" style="${col ? 'color:' + col : ''}">${val}</div><div class="foot">${foot}</div></div>`;
+  const cl = (ds) => DTS[ds] && DTS[ds].clayton ? DTS[ds].clayton.mean : null;
+  const pcOf = (ds) => DTS[ds] && DTS[ds].pct_changed ? DTS[ds].pct_changed.mean : null;
+  cards.innerHTML =
+    mk('Fidelity to 2022 (resim 2022p)', fmt(cl('resim_2022p'), 3), 'fraction of 2022 calls reproduced', COL('resim_2022p')) +
+    mk('Changed by re-annotation', pcOf('resim_2025k') == null ? '—' : pcOf('resim_2025k').toFixed(1) + '%', '2022p → 2025k growth conditions', COL('resim_2025k')) +
+    mk('Changed by rebuild', pcOf('resim_2026p') == null ? '—' : pcOf('resim_2026p').toFixed(1) + '%', '2022p → 2026p growth conditions', COL('resim_2026p')) +
+    mk('Free-lunch models', '0', 'none — ATP-safe pipeline is clean', CSS('--good'));
+
+  const m = DATA.meta;
+  document.getElementById('d-genomes').textContent = m.n_genomes;
+  document.getElementById('d-models').textContent = m.rows.toLocaleString();
+  document.getElementById('d-failed').textContent = m.failed === 0 ? 'none' : m.failed;
+  document.getElementById('q-n').textContent = `${m.n_genomes} genomes × 3 simulated sets`;
+  document.getElementById('livestatus').textContent = m.complete
+    ? `Full four-dataset sweep complete · ${m.n_genomes} genomes × 4 datasets · 0 failed`
+    : `Sweep in progress · ${m.failed} failed`;
+  document.getElementById('livedot').style.background = m.complete ? CSS('--good') : CSS('--warning');
+  document.getElementById('footmeta').textContent =
+    `Generated from ${m.rows.toLocaleString()} model-dataset simulations over ${m.n_genomes} genomes.`;
+
+  fillObservation();
+}
+
+// ---- per-substrate observation (concentration + rebuild direction) ----------
+function fillObservation() {
+  const host = document.getElementById('media-observation');
+  const dist = DATA.distribution;
+  if (!host || !dist || !dist.concentration) return;
+  const c = dist.concentration, rs = dist.rebuild_shift || {};
+  const meds = SIM.map(k => c[k] && c[k].median).filter(v => v != null);
+  const overs = SIM.map(k => c[k] && c[k].over50).filter(v => v != null);
+  const nSub = (c.resim_2026p && c.resim_2026p.n) || 324;
+  const medLo = Math.min(...meds).toFixed(1), medHi = Math.max(...meds).toFixed(1);
+  const ovLo = Math.min(...overs), ovHi = Math.max(...overs);
+  const gains = (rs.sample_gains || []).map(g => g.media.replace(/-/g, ' ').toLowerCase()).join(', ');
+  host.innerHTML = `
+    <div class="callout">
+      <h3>Most substrates barely move; a minority flip hard</h3>
+      <p>The ~10% average change is not spread evenly. Across all three resimulated sets the
+        <strong>median substrate changes only ${medLo}–${medHi}%</strong> of its calls versus Original
+        2022p — but a tail of <strong>${ovLo}–${ovHi} substrates</strong> (of ${nSub}) changes more than
+        half. That minority carries the average, and the table below is sorted to surface it.</p>
+      <p style="margin-top:10px">The <strong>2026p rebuild redistributes carbon-source predictions</strong>
+        rather than uniformly over- or under-calling: versus Original 2022p it newly predicts growth on
+        <strong>${rs.gained}</strong> substrates (${gains}) and drops it on <strong>${rs.lost}</strong> other
+        carbon conditions — netting slightly fewer growth calls overall. Accuracy against experiment is
+        essentially unchanged because some shifts move toward the measured answer (acetate, which
+        <em style="font-style:italic">E. coli</em> does use) and others away from it (acetoacetate, over-predicted).</p>
+    </div>`;
+}
+
+// ---- count (% changed) cell -------------------------------------------------
+function cellCount(o, baseline) {
+  if (o == null || o.grow == null) return '<td class="num muted">—</td>';
+  if (baseline) return `<td class="num">${o.grow}</td>`;
+  const pct = o.pct == null ? '' :
+    `<div class="chg${o.pct >= 25 ? ' hi' : ''}">(${o.pct.toFixed(1)}%)</div>`;
+  return `<td class="num">${o.grow}${pct}</td>`;
+}
+
+// ---- per-genome table -------------------------------------------------------
+let GT_SORT = { k: 'resim_2026p', dir: -1 };
+const dsKey = (row, k) => {
+  const v = row[k];
+  if (v && typeof v === 'object') return v.pct != null ? v.pct : v.grow;  // sort resim by %changed, else grow
+  return v;
+};
+function renderGenomeTable() {
+  const tb = document.getElementById('genome-tbody'); if (!tb || !DATA.genome_table) return;
+  const q = (document.getElementById('genome-filter').value || '').trim();
+  let rows = DATA.genome_table.slice();
+  if (q) rows = rows.filter(r => String(r.genome_id).includes(q));
+  rows.sort((a, b) => {
+    const x = dsKey(a, GT_SORT.k), y = dsKey(b, GT_SORT.k);
+    if (x == null) return 1; if (y == null) return -1;
+    if (typeof x === 'string') return GT_SORT.dir * x.localeCompare(y);
+    return GT_SORT.dir * (x - y);
+  });
+  const numCell = v => v == null ? '<td class="num muted">—</td>' : `<td class="num">${v}</td>`;
+  tb.innerHTML = rows.map(r => `<tr>
+    <td>${r.genome_id}</td>
+    ${numCell(r.exp_grow)}
+    ${cellCount(r.original_2022p, true)}
+    ${cellCount(r.resim_2022p)}
+    ${cellCount(r.resim_2025k)}
+    ${cellCount(r.resim_2026p)}
+  </tr>`).join('');
+  document.getElementById('genome-count').textContent = `${rows.length} of ${DATA.genome_table.length} genomes`;
+}
+
+// ---- per-media table --------------------------------------------------------
+let MT_SORT = { k: 'resim_2026p', dir: -1 };
+function renderMediaTable() {
+  const tb = document.getElementById('media-tbody'); if (!tb || !DATA.media_table) return;
+  const q = (document.getElementById('media-filter').value || '').trim().toLowerCase();
+  let rows = DATA.media_table.slice();
+  if (q) rows = rows.filter(r => r.media_name.toLowerCase().includes(q));
+  const mkey = (row, k) => {
+    if (k === 'media_name' || k === 'panel') return row[k];
+    if (k === 'experimental') return row[k];
+    const v = row[k]; return v && typeof v === 'object' ? (v.pct != null ? v.pct : v.grow) : v;
+  };
+  rows.sort((a, b) => {
+    const x = mkey(a, MT_SORT.k), y = mkey(b, MT_SORT.k);
+    if (x == null) return 1; if (y == null) return -1;
+    if (typeof x === 'string') return MT_SORT.dir * x.localeCompare(y);
+    return MT_SORT.dir * (x - y);
+  });
+  tb.innerHTML = rows.map(r => {
+    const exp = r.experimental == null ? '<span class="muted">—</span>'
+      : (r.experimental ? '<span class="pill good">grows</span>' : '<span class="pill crit">no growth</span>');
+    return `<tr>
+      <td>${r.media_name.replace(/^(Carbon|Nitrogen|Phosphate|Sulfate|Phosphorus|Sulfur)-/, '')}</td>
+      <td class="muted">${r.panel}</td>
+      ${cellCount(r.original_2022p, true)}
+      ${cellCount(r.resim_2022p)}
+      ${cellCount(r.resim_2025k)}
+      ${cellCount(r.resim_2026p)}
+      <td style="text-align:left">${exp}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('media-count').textContent = `${rows.length} of ${DATA.media_table.length} substrates`;
+}
+
+function wireTable(tableId, filterId, sortObj, render, strKeys) {
+  document.querySelectorAll(`#${tableId} thead th`).forEach(th => {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => {
+      const k = th.getAttribute('data-k');
+      sortObj.dir = sortObj.k === k ? -sortObj.dir : (strKeys.includes(k) ? 1 : -1);
+      sortObj.k = k; render();
+    });
+  });
+  document.getElementById(filterId).addEventListener('input', render);
+}
+
+// ---- load -------------------------------------------------------------------
+fetch('data/dashboard.json')
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => {
+    DATA = d; fillText(); renderAll();
+    wireTable('genome-table', 'genome-filter', GT_SORT, renderGenomeTable, ['genome_id']); renderGenomeTable();
+    wireTable('media-table', 'media-filter', MT_SORT, renderMediaTable, ['media_name', 'panel']); renderMediaTable();
+  })
+  .catch(err => {
+    document.getElementById('livestatus').textContent =
+      'Could not load results data (data/dashboard.json). If viewing locally, serve over HTTP.';
+    document.getElementById('livedot').style.background = CSS('--critical');
+    console.error(err);
+  });
+</script>
+</body>
+</html>

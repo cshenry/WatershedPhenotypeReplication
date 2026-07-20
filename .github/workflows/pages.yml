@@ -1,0 +1,39 @@
+name: Deploy dashboard to GitHub Pages
+
+# Publishes docs/ to GitHub Pages on every push to main.
+#
+# ONE-TIME SETUP (repo owner, in the GitHub web UI):
+#   Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# After that this workflow deploys automatically; the site lands at
+#   https://<user>.github.io/<repo>/
+
+on:
+  push:
+    branches: [main]
+    paths: ["docs/**", ".github/workflows/pages.yml"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish; don't stack concurrent ones.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - id: deployment
+        uses: actions/deploy-pages@v4
