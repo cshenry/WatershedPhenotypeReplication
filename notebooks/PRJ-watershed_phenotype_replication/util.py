@@ -186,7 +186,7 @@ def ensure_kbase_token() -> str | None:
     if existing:
         return existing
     try:
-        from kbutillib.shared_env_utils import SharedEnvUtils
+        from kbutillib.core.shared_env_utils import SharedEnvUtils
 
         tok = SharedEnvUtils().get_token("kbase")
     except Exception:
@@ -199,7 +199,7 @@ def ensure_kbase_token() -> str | None:
 def get_msfba():
     """Authenticated MSFBAUtils facade (model + media + FBA ops)."""
     tok = ensure_kbase_token()
-    from kbutillib.ms_fba_utils import MSFBAUtils
+    from kbutillib.domains.modeling.ms_fba_utils import MSFBAUtils
 
     return MSFBAUtils(token=tok)
 

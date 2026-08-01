@@ -31,21 +31,27 @@ media) and `93541` (the `ecoli_biolog` phenotype set with the measured K-12 call
 > matrices Chris sent by email already contain every result. You only need narrative
 > access to *recompute* them.
 
-## Step 2 — Put your 2022 data files in place
+## Step 2 — The 2022 data is already included
 
-The 2022 output is **your team's unpublished data**, so it is deliberately not committed
-here. Copy your own files into `notebooks/data/` (create the directory):
+The phenotype data this pipeline reproduces is bundled in `notebooks/data/` — you don't
+need to supply anything:
 
 ```
 notebooks/data/
   BiologMacTestOutput_On-Off.csv    # Clayton's 324 × 519 growth-call matrix (the baseline)
+  BiologMacTestOutput.xlsx          # the same 2022 output, source workbook
   Watershed_Mastersheet_Sum22.csv   # the 519-genome roster
-  BioLogMacTest.ipynb               # Clayton's original notebook (reference only)
+  BioLogMacTest.ipynb               # Clayton's original 2022 notebook (the method, reference only)
 ```
 
-`BiologMacTestOutput_On-Off.csv` must be the on/off matrix: media names down the first
-column, one column per model named `<genome_id>.fbamodel`, values `0`/`1`. The pipeline
-reads it as the **Original 2022p** baseline that every "% changed" is measured against.
+`BiologMacTestOutput_On-Off.csv` is the on/off matrix (media names down the first column,
+one column per model named `<genome_id>.fbamodel`, values `0`/`1`) that the pipeline reads
+as the **Original 2022p** baseline every "% changed" is measured against.
+
+The Watershed strain-metadata files (sampling locations/dates) are *not* included — they
+aren't needed to reproduce the phenotype comparison. You still need the KBase narratives
+from Step 1 to recompute the model-based datasets (2022p/2025k/2026p); the bundled data
+alone reproduces only the Original 2022p baseline.
 
 ## Step 3 — Install
 
@@ -60,11 +66,12 @@ pip install -r requirements.txt
 
 > ### Dependency notes
 >
-> **KBUtilLib** is installed from its `main` branch, which now contains every fix this
-> pipeline depends on (verified against `main` as of 2026-07-20 — in particular the
-> gap-filling fix for `NameError: name 'genome' is not defined`, which previously
-> failed on *every* gap-fill call). If you cloned or installed before that date, force a
-> refresh:
+> **KBUtilLib** is installed from its `main` branch, which carries the current package
+> layout (the `domains/` reorg) and every fix this pipeline depends on — the gap-filling
+> `NameError` and the reorg data-path resolvers (ModelSEED database, ontology
+> dictionaries). This repo imports the canonical reorg paths
+> (`kbutillib.domains.modeling.*`, `kbutillib.core.*`), not the deprecated flat-module
+> shims. If you cloned or installed before 2026-07-31, force a refresh:
 > ```bash
 > pip install --force-reinstall --no-deps \
 >   "git+https://github.com/cshenry/KBUtilLib@main#egg=kbutillib"

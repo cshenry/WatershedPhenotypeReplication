@@ -76,9 +76,10 @@ narratives you'll need shared with you and the 2022 data files you supply yourse
 ## Provenance
 
 The 2022 method is **not inferred**. It is Clayton Piehl's own notebook and spreadsheet
-output, supplied by the Hope College team and used here as ground truth. Those files are
-the collaborators' unpublished data and are therefore **not committed to this public
-repository** — see [docs/SETUP.md](docs/SETUP.md) for where to place your copies.
+output, supplied by the Hope College team and used here as ground truth — bundled in
+[`notebooks/data/`](notebooks/data/) so the Original 2022p baseline is reproducible
+directly. (The separate Watershed strain-metadata files are not included; they aren't
+needed for the phenotype comparison.) See [docs/SETUP.md](docs/SETUP.md) to run it.
 
 ---
 
