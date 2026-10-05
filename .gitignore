@@ -8,3 +8,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+# pinned data checkouts fetched by docs/SETUP.md Step 4
+/ModelSEEDDatabase/
+/cb_annotation_ontology_api/

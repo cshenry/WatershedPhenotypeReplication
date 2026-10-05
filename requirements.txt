@@ -1,10 +1,23 @@
-# WatershedPhenotypeReplication dependencies.
+# WatershedPhenotypeReplication dependencies -- exact commits, installed and
+# tested together.
 #
-# KBUtilLib has no PyPI release; install it from source via a git VCS URL so
-# this repo is runnable outside Chris's local Dropbox layout (pip resolves
-# and builds it like any other dependency). Pin modelseedpy/cobra to the
-# versions ModelingLOE and GenomeAnnotationAggregator build against.
-git+https://github.com/cshenry/KBUtilLib@main#egg=kbutillib
-modelseedpy==0.4.2
+# Every git dependency is pinned to a commit SHA, never a branch. KBUtilLib and
+# ModelSEEDpy change weekly; installing either from a branch gives a combination
+# nobody has tested. The PyPI modelseedpy (0.4.2, March 2025) is older than the
+# API KBUtilLib calls and fails at start-up with
+#   TypeError: ModelSEEDBiochem.get() got an unexpected keyword argument 'path'
+# To upgrade, move these SHAs together and re-run the checks in docs/SETUP.md.
+#
+# Two data repositories (ModelSEEDDatabase, cb_annotation_ontology_api) are also
+# required and are NOT pip-installable -- docs/SETUP.md Step 4 fetches them at
+# pinned commits.
+
+# KBUtilLib: main as of 2026-08-01, the state this repository was published against.
+git+https://github.com/cshenry/KBUtilLib@c89703e0f36d843cad1a384b9388890fca6337a9#egg=kbutillib
+# ModelSEEDpy: the cshenry fork, main as of 2026-07-21 -- not the PyPI release.
+# (It still reports __version__ 0.4.2; check `pip freeze` for the SHA instead.)
+git+https://github.com/cshenry/ModelSEEDpy@b758b44217bca756a5e07a70e986fbdfe73dd1b6#egg=modelseedpy
+# cobrakbase: KBUtilLib imports it but does not declare it as a dependency.
+git+https://github.com/cshenry/cobrakbase@68444e46fe3b68482da80798642461af2605e349#egg=cobrakbase
 cobra==0.30.0
 matplotlib>=3.8

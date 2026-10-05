@@ -3,8 +3,11 @@
 How to install this pipeline and reproduce the results yourself. Written to be
 followed start-to-finish, including by a coding agent working on your behalf.
 
-There are **three things you need that are not in this repository**: access to the
-KBase narratives, your own 2022 data files, and a KBase auth token. Steps 1–3 below.
+Things you need that are not in this repository: access to the KBase narratives
+(Step 1), two data repositories fetched at pinned commits (Step 4), and a KBase auth
+token (Step 5). Follow the steps in order. **Do not substitute newer versions of
+anything** — every dependency is pinned to the exact commit it was tested with, and
+unpinned installs are what broke this guide in September 2026.
 
 ---
 
@@ -57,6 +60,9 @@ alone reproduces only the Original 2022p baseline.
 
 Python **3.11** is required (3.12+ has not been tested against this stack).
 
+Use a **fresh** virtual environment. If you installed this repository before October
+2026, delete the old `.venv` and start again rather than upgrading it in place.
+
 ```bash
 git clone https://github.com/cshenry/WatershedPhenotypeReplication.git
 cd WatershedPhenotypeReplication
@@ -64,25 +70,62 @@ python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> ### Dependency notes
->
-> **KBUtilLib** is installed from its `main` branch, which carries the current package
-> layout (the `domains/` reorg) and every fix this pipeline depends on — the gap-filling
-> `NameError` and the reorg data-path resolvers (ModelSEED database, ontology
-> dictionaries). This repo imports the canonical reorg paths
-> (`kbutillib.domains.modeling.*`, `kbutillib.core.*`), not the deprecated flat-module
-> shims. If you cloned or installed before 2026-07-31, force a refresh:
-> ```bash
-> pip install --force-reinstall --no-deps \
->   "git+https://github.com/cshenry/KBUtilLib@main#egg=kbutillib"
-> ```
->
-> **modelseedpy** is pinned to the `0.4.2` PyPI release. This pipeline was developed
-> against a working copy that may be slightly ahead of it. If you hit an `ImportError`
-> for `MSBuilder` or a missing attribute on a `modelseedpy` object, that's the cause —
-> email Chris and he'll point you at the right branch.
+`requirements.txt` pins every code dependency to an exact commit:
 
-### KBase token
+| Package | Source | Commit |
+|---|---|---|
+| KBUtilLib | `github.com/cshenry/KBUtilLib` | `c89703e0f36d843cad1a384b9388890fca6337a9` (main, 2026-08-01) |
+| ModelSEEDpy | `github.com/cshenry/ModelSEEDpy` | `b758b44217bca756a5e07a70e986fbdfe73dd1b6` (main, 2026-07-21) |
+| cobrakbase | `github.com/cshenry/cobrakbase` | `68444e46fe3b68482da80798642461af2605e349` (branch `filipe-cobra-model`) |
+| cobra | PyPI | `0.30.0` |
+
+Confirm pip installed those commits and not something else:
+
+```bash
+pip freeze | grep -iE 'kbutillib|modelseedpy|cobrakbase|^cobra='
+```
+
+Each git package should show its SHA from the table. Note that **ModelSEEDpy still
+reports itself as version 0.4.2** even at this commit, so `modelseedpy.__version__` and
+`pip show` cannot tell it apart from the PyPI 0.4.2 release. Only the SHA in `pip freeze`
+can. **Do not** install `modelseedpy` from PyPI, and do not install KBUtilLib or
+ModelSEEDpy from a branch (`@main`). The PyPI release predates the API KBUtilLib calls,
+and a branch head is a combination nobody has tested.
+
+## Step 4 — Fetch the two data repositories (pinned)
+
+KBUtilLib reads two data repositories from disk. They are not Python packages, so pip
+cannot install them. Fetch each one at its pinned commit **into the repository root,
+next to `.venv/`**. KBUtilLib finds them by searching the directories above its own
+installed location. With the virtual environment at `./.venv` as in Step 3, that search
+reaches the repository root. (A virtual environment anywhere else, or a conda
+environment, will not find them. Use `./.venv`.) From the repository root:
+
+```bash
+# ModelSEED biochemistry database, ~720 MB.
+# Do NOT plain-`git clone` it: its default branch (master) was last updated in 2021 and
+# is not the biochemistry these models were built with.
+git init -q ModelSEEDDatabase
+git -C ModelSEEDDatabase remote add origin https://github.com/ModelSEED/ModelSEEDDatabase.git
+git -C ModelSEEDDatabase fetch --depth 1 origin e507319a968316f07427977866f99ab2486d349a
+git -C ModelSEEDDatabase checkout -q FETCH_HEAD
+
+# Annotation-ontology data (reaction filters and ontology dictionaries), ~100 MB.
+git init -q cb_annotation_ontology_api
+git -C cb_annotation_ontology_api remote add origin https://github.com/kbaseapps/cb_annotation_ontology_api.git
+git -C cb_annotation_ontology_api fetch --depth 1 origin 97f9525aec95390f43f8be88491f35bb11bd589c
+git -C cb_annotation_ontology_api checkout -q FETCH_HEAD
+
+# Needed by build_2026p.py; harmless elsewhere. Add it to your shell profile, or export
+# it in every new shell before running the pipeline.
+export KBUTILLIB_ONTOLOGY_DATA_DIR="$PWD/cb_annotation_ontology_api/data"
+```
+
+Both directories are listed in `.gitignore`. Do not configure them through
+`~/.kbutillib/dependencies.yaml`: at these KBUtilLib commits that file is read but
+never applied.
+
+## Step 5 — KBase token, then verify
 
 Every script authenticates to KBase. Get your token from
 [narrative.kbase.us](https://narrative.kbase.us) (Account → Developer Tokens) and make
@@ -94,20 +137,23 @@ export KB_AUTH_TOKEN="<your-token>"
 mkdir -p ~/.kbase && echo "<your-token>" > ~/.kbase/token
 ```
 
-Verify the install and your access in one shot:
+Verify the install and your access in one shot. The first line printed checks
+Steps 3–4 (no network needed); the second checks Step 1 and your token:
 
 ```bash
 python -c "
 import sys; sys.path.insert(0,'notebooks/PRJ-watershed_phenotype_replication')
 from util import get_msfba
 fba = get_msfba()
+print('install OK: database, ontology data and cobrakbase all loaded')
 n = len(fba.list_ws_objects(265353, type='KBaseFBA.FBAModel'))
 print(f'OK — {n} models visible in narrative 265353')   # expect 3114
 "
 ```
 
-If that prints ~3114 models, you are ready. If it raises a permissions error, Step 1
-has not completed.
+If both lines print, you are ready. If the first one fails, look up the error in
+**Troubleshooting** below. `Invalid token` means the token is wrong or has expired; a
+permissions error means Step 1 is not done yet.
 
 ---
 
@@ -117,7 +163,12 @@ The stages are **checkpointed and resumable** — every one appends to a TSV and
 work already marked `ok`, so an interrupted run is safe to restart with the same
 command. All are parallel; `--workers 50` suits a large machine, `--workers 2` a laptop.
 
-Run them in this order (or skip to stage 3 — the models already exist in 265353):
+**Start at stage 3.** The models already exist in 265353. Stages 1 and 2 *save models
+into narrative 265353*. With read access they fail when they try to save. With write
+access they overwrite the published models. Run them only if you mean to rebuild the
+corpus, and agree that with Chris first.
+
+The full order:
 
 ```bash
 # 1. Build the 2026p arm (519 models, ~30 s each)
@@ -138,10 +189,9 @@ Outputs land in `notebooks/PRJ-watershed_phenotype_replication/NBOutput/`
 (gitignored): the sweep summary, the per-media calls, and the growth-matrix workbook.
 
 **Smoke-test first.** Every stage takes `--limit N` to run a couple of items before
-committing to the full set:
+committing to the full set. Stage 3 only reads from KBase, so smoke-test that one:
 
 ```bash
-python scripts/gapfill_all.py --limit 2 --workers 1
 python scripts/four_dataset_sweep.py --limit 2 --workers 1 --media-limit 5
 ```
 
@@ -198,7 +248,13 @@ what makes them comparable:
 
 | Symptom | Cause / fix |
 |---|---|
-| `NameError: name 'genome' is not defined` | KBUtilLib too old — see the dependency caveat above. |
+| `TypeError: ModelSEEDBiochem.get() got an unexpected keyword argument 'path'` | ModelSEEDpy came from PyPI. Use a fresh venv and `pip install -r requirements.txt` (Step 3), then check `pip freeze` for the SHA. |
+| `FileNotFoundError: ... ModelSEEDDatabase/Biochemistry/` | Step 4 is not done, the checkout is not in the repository root, or the virtual environment is not at `./.venv`. |
+| `FileNotFoundError: ... cb_annotation_ontology_api/data/FilteredReactions.csv` | Same causes as the row above (Step 4). |
+| `Ontology dictionaries (SSO_dictionary.json et al) not found` | `KBUTILLIB_ONTOLOGY_DATA_DIR` not exported in this shell (Step 4). |
+| `ModuleNotFoundError: No module named 'cobrakbase'` | Installed from an old `requirements.txt`. Re-run Step 3 in a fresh venv. |
+| `Token validation failed ... Invalid token` | The KBase token is wrong or expired. Make a new one (Step 5). |
+| `NameError: name 'genome' is not defined` | KBUtilLib too old. Re-run Step 3 in a fresh venv. |
 | `Either set callback URL...` | The native ontology path wasn't enabled. The scripts set it themselves; if you call the library directly, set `native_ontology` on the **delegate** (`k.recon._delegate.native_ontology = True`) — the Impl wrapper proxies `__getattr__` but not `__setattr__`, so assigning on the wrapper silently does nothing. |
 | `reference cannot be null or the empty string` | A model was saved without a `template_ref`. Rebuild it with `build_2026p.py`. |
 | `No object with name Carbon-Pyruvic-Acid` | Media reference not workspace-qualified — it lives in `KBaseMedia`, not your narrative. |
